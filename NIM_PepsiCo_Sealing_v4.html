@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NIM × PepsiCo — Sealing Issue Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{
+  --navy:#001A3A; --navy2:#002554; --navy3:#003580;
+  --blue:#0057B8; --blue2:#1A6FD4; --sky:#00A3E0;
+  --red:#E8192C; --red2:#FF3347;
+  --amber:#FFC72C; --green:#5CB85C;
+  --white:#FFFFFF; --off:#F7F9FC; --off2:#EEF2F8;
+  --border:#D4DCE8; --border2:#C0CCE0;
+  --tx:#0A1628; --tx2:#3A4F6E; --tx3:#6B82A0;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans Thai',sans-serif;
+  --r:10px; --r2:6px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;font-family:var(--sans);background:var(--off);color:var(--tx);overflow:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{display:flex;flex-direction:column}
+
+/* ─── HEADER ─── */
+#hdr{
+  background:var(--navy);
+  flex-shrink:0;
+  position:relative;
+  overflow:hidden;
+}
+#hdr::after{
+  content:'';position:absolute;right:-40px;top:-40px;
+  width:180px;height:180px;border-radius:50%;
+  background:rgba(0,163,224,.06);pointer-events:none;
+}
+#hdr-main{
+  padding:10px 16px;display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.logo-pill{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;padding:5px 10px;flex-shrink:0;
+}
+.logo-mark{
+  width:26px;height:26px;border-radius:5px;
+  background:linear-gradient(135deg,var(--sky),var(--blue2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:700;color:#fff;letter-spacing:-.02em;
+  flex-shrink:0;
+}
+.logo-text{font-size:.72rem;font-weight:600;color:rgba(255,255,255,.9);line-height:1.2;white-space:nowrap}
+.logo-sub{font-size:.55rem;color:rgba(255,255,255,.4);font-weight:400}
+.sep-v{width:1px;height:22px;background:rgba(255,255,255,.1);flex-shrink:0}
+.hdr-title{flex:1;min-width:0}
+.hdr-title h1{font-size:.88rem;font-weight:700;color:#fff;letter-spacing:.01em;line-height:1.2}
+.hdr-title p{font-size:.57rem;color:rgba(255,255,255,.4);margin-top:1px;font-weight:400}
+.hdr-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
+#dt-block{text-align:right}
+#dt-time{font-family:var(--mono);font-size:.7rem;font-weight:600;color:var(--sky);letter-spacing:.05em;line-height:1.2}
+#dt-date{font-size:.55rem;color:rgba(255,255,255,.4);line-height:1.3}
+.btn-cap{
+  background:var(--amber);border:none;color:var(--navy);
+  font-family:var(--sans);font-size:.62rem;font-weight:700;
+  padding:6px 12px;border-radius:var(--r2);cursor:pointer;
+  display:flex;align-items:center;gap:5px;letter-spacing:.02em;
+  transition:.15s;white-space:nowrap;flex-shrink:0;
+}
+.btn-cap:hover{background:#FFD547;transform:translateY(-1px)}
+.btn-cap svg{width:13px;height:13px}
+
+/* ─── TAB BAR ─── */
+#tab-bar{
+  padding:0 16px;display:flex;align-items:center;gap:2px;
+  background:rgba(0,0,0,.25);min-height:36px;
+}
+.tab{
+  background:transparent;border:none;
+  color:rgba(255,255,255,.42);
+  font-family:var(--sans);font-size:.7rem;font-weight:500;
+  padding:6px 14px;border-radius:var(--r2);cursor:pointer;
+  transition:.15s;white-space:nowrap;display:flex;align-items:center;gap:6px;
+  position:relative;
+}
+.tab:hover{color:rgba(255,255,255,.8);background:rgba(255,255,255,.06)}
+.tab.active{color:#fff;background:rgba(255,255,255,.1)}
+.tab.active::after{
+  content:'';position:absolute;bottom:-1px;left:14px;right:14px;
+  height:2px;background:var(--sky);border-radius:2px 2px 0 0;
+}
+.tab-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.tab-sep{width:1px;height:16px;background:rgba(255,255,255,.08);margin:0 4px}
+#tab-ctx{margin-left:auto;font-family:var(--mono);font-size:.58rem;color:rgba(255,255,255,.3);letter-spacing:.04em}
+
+/* ─── CONTENT ─── */
+#content{flex:1;overflow:hidden;position:relative}
+.panel{position:absolute;inset:0;display:none;flex-direction:column;padding:10px 14px;gap:8px;overflow:hidden}
+.panel.active{display:flex}
+
+/* ─── KPI STRIP ─── */
+.kstrip{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;flex-shrink:0}
+.kcard{
+  background:var(--white);border:1px solid var(--border);border-radius:var(--r);
+  padding:10px 12px;position:relative;overflow:hidden;
+  display:flex;align-items:center;gap:10px;
+  transition:.15s ease;cursor:default;
+}
+.kcard:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,37,84,.08)}
+.kcard::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r) var(--r) 0 0;
+}
+.kc-red::before{background:var(--red)}
+.kc-blue::before{background:var(--blue)}
+.kc-sky::before{background:var(--sky)}
+.kc-amber::before{background:var(--amber)}
+.kc-green::before{background:var(--green)}
+.kicon{
+  width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.ki-red{background:#FEF0F1} .ki-blue{background:#E6F0FF} .ki-sky{background:#E5F6FF} .ki-amber{background:#FFF8E6} .ki-green{background:#EEF8EE}
+.kicon svg{width:16px;height:16px}
+.kbody{min-width:0;flex:1}
+.klabel{font-size:.55rem;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;line-height:1.3;white-space:nowrap}
+.kval{font-size:1.15rem;font-weight:700;color:var(--tx);line-height:1.2;letter-spacing:-.03em;font-family:var(--mono)}
+.ksub{font-size:.56rem;color:var(--tx3);margin-top:1px;line-height:1.3}
+.ksub .tag-up{color:var(--green);font-weight:700} .ksub .tag-dn{color:var(--red);font-weight:700} .ksub .tag-neu{color:var(--tx3)}
+
+/* ─── CARD ─── */
+.card{
+  background:var(--white);border:1px solid var(--border);border-radius:var(--r);
+  padding:12px 14px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-height:0;
+  transition:.15s ease;
+}
+.card:hover{border-color:var(--border2)}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px}
+.card-title{font-size:.68rem;font-weight:600;color:var(--tx);display:flex;align-items:center;gap:6px;letter-spacing:.01em}
+.ctag{font-size:.55rem;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--off2);color:var(--tx2);border:1px solid var(--border);white-space:nowrap}
+.ctag.nav{background:#E6F0FF;color:#0057B8;border-color:#B8D0F8;cursor:pointer;transition:.12s}
+.ctag.nav:hover{background:#0057B8;color:#fff;border-color:#0057B8}
+.legend{display:flex;gap:10px;flex-wrap:wrap}
+.li{display:flex;align-items:center;gap:4px;font-size:.57rem;color:var(--tx2);font-weight:500}
+.ld{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.cw{flex:1;position:relative;min-height:0}
+
+/* ─── GRIDS ─── */
+.g-main{display:grid;gap:8px;flex:1;min-height:0}
+.g21{grid-template-columns:2fr 1fr}
+.g12{grid-template-columns:1fr 2fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+.g2{grid-template-columns:1fr 1fr}
+.g1{grid-template-columns:1fr}
+
+/* ─── HEATMAP ─── */
+.hm-wrap{flex:1;overflow:auto;min-height:0}
+.hm-grid{display:grid;gap:2px;min-width:max-content}
+.hm-row{display:flex;align-items:center;gap:2px}
+.hm-label{font-size:.57rem;font-weight:600;color:var(--tx3);width:22px;text-align:right;padding-right:4px;flex-shrink:0;font-family:var(--mono)}
+.hm-cell{
+  width:18px;height:18px;border-radius:3px;cursor:default;
+  transition:.1s;position:relative;flex-shrink:0;
+}
+.hm-cell:hover{transform:scale(1.35);z-index:10}
+.hm-dow{display:flex;gap:2px;padding-left:26px;margin-bottom:3px}
+.hm-dow span{font-size:.5rem;font-weight:600;color:var(--tx3);width:18px;text-align:center;font-family:var(--mono)}
+.hm-legend{display:flex;align-items:center;gap:4px;font-size:.55rem;color:var(--tx3);flex-shrink:0}
+.hm-swatch{width:12px;height:12px;border-radius:2px}
+
+/* ─── YOY ─── */
+.yoy-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;flex-shrink:0}
+.yoy-card{
+  background:var(--off);border:1px solid var(--border);border-radius:var(--r2);
+  padding:8px 10px;cursor:pointer;transition:.15s;
+}
+.yoy-card:hover{border-color:var(--blue2);background:#F0F5FF;transform:translateY(-1px)}
+.yoy-card.sel{border-color:var(--blue);background:#E6F0FF}
+.yoy-yr{font-size:.55rem;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em}
+.yoy-val{font-size:.95rem;font-weight:700;color:var(--tx);font-family:var(--mono);letter-spacing:-.02em;line-height:1.2}
+.yoy-chg{font-size:.57rem;font-weight:600;margin-top:2px}
+
+/* ─── TOP TABLE ─── */
+.tbl-wrap{flex:1;overflow-y:auto;min-height:0}
+table.rtbl{width:100%;border-collapse:collapse;font-size:.65rem}
+.rtbl th{
+  background:var(--off2);color:var(--tx3);font-weight:600;font-size:.54rem;
+  text-transform:uppercase;letter-spacing:.07em;
+  padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:1;
+}
+.rtbl td{padding:6px 8px;border-bottom:1px solid var(--off2);color:var(--tx);vertical-align:middle}
+.rtbl tr:last-child td{border-bottom:none}
+.rtbl tr:hover td{background:var(--off)}
+.rank{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:19px;height:19px;border-radius:5px;
+  font-size:.58rem;font-weight:700;font-family:var(--mono);
+}
+.r1{background:#FFD700;color:#5A3E00}
+.r2{background:#D4D4D4;color:#3A3A3A}
+.r3{background:#C9843A;color:#fff}
+.rn{background:var(--off2);color:var(--tx3)}
+.mbar-wrap{display:flex;align-items:center;gap:5px}
+.mbar{height:5px;border-radius:2px;background:var(--blue);flex-shrink:0;min-width:2px}
+.num-mono{font-family:var(--mono);font-size:.65rem;font-weight:600}
+
+/* ─── MONTH GRID ─── */
+.mo-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;flex:1;min-height:0}
+.mo-cell{
+  background:var(--off);border:1px solid var(--border);border-radius:var(--r2);
+  padding:8px 9px;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:2px;
+}
+.mo-cell:hover{background:#EEF4FF;border-color:var(--blue2);transform:translateY(-1px)}
+.mo-cell.peak{border-color:rgba(232,25,44,.3);background:rgba(232,25,44,.03)}
+.mo-name{font-size:.56rem;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em}
+.mo-val{font-size:.88rem;font-weight:700;color:var(--tx);font-family:var(--mono);line-height:1.2}
+.mo-pc{font-size:.53rem;color:var(--blue);font-weight:500}
+.mo-npc{font-size:.53rem;color:var(--sky);font-weight:500}
+.mo-bar{height:3px;border-radius:1.5px;background:linear-gradient(90deg,var(--blue),var(--sky));margin-top:3px}
+
+/* ─── PROD DATA BADGE ─── */
+.prod-badge{
+  display:flex;align-items:center;gap:5px;
+  background:#FFF8E6;border:1px solid #FFD98A;
+  border-radius:var(--r2);padding:4px 9px;
+  font-size:.58rem;font-weight:600;color:#7A5200;
+  flex-shrink:0;
+}
+.prod-badge .dot-amber{width:6px;height:6px;border-radius:50%;background:var(--amber);flex-shrink:0}
+
+/* ─── FOOTER ─── */
+#ftr{
+  flex-shrink:0;background:var(--navy);
+  padding:4px 16px;display:flex;align-items:center;justify-content:space-between;
+}
+#ftr span{font-size:.53rem;color:rgba(255,255,255,.3);letter-spacing:.03em}
+
+/* ─── SELECTOR PILLS ─── */
+.sel-pill{
+  background:var(--off2);border:1px solid var(--border);border-radius:5px;
+  padding:3px 10px;font-size:.62rem;font-weight:700;color:var(--tx2);
+  cursor:pointer;transition:.12s;white-space:nowrap;font-family:var(--mono);
+}
+.sel-pill:hover{background:#E6F0FF;border-color:#B8D0F8;color:var(--blue)}
+.sel-pill.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.sel-pill.mo-active{background:var(--red);color:#fff;border-color:var(--red)}
+
+/* ─── SPARKLINE ─── */
+.kcard{align-items:flex-start;padding:10px 12px 8px}
+.kcard-top{display:flex;align-items:center;gap:10px;width:100%}
+.kspk{width:100%;height:28px;margin-top:4px;flex-shrink:0}
+
+/* ─── DOW CHART ─── */
+.dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;flex:1;align-items:end}
+.dow-col{display:flex;flex-direction:column;align-items:center;gap:3px}
+.dow-bar-wrap{width:100%;display:flex;justify-content:center;align-items:flex-end;flex:1}
+.dow-bar{width:70%;border-radius:3px 3px 0 0;transition:.2s;cursor:default;min-height:2px}
+.dow-lbl{font-size:.58rem;font-weight:600;color:var(--tx3);font-family:var(--mono)}
+.dow-val{font-size:.56rem;color:var(--tx2);font-family:var(--mono);font-weight:600}
+
+/* ─── SLOPE CHART ─── */
+.slope-wrap{flex:1;min-height:0;position:relative}
+
+/* CAPTURE MODE */
+body.cap #content{overflow:visible!important}
+body.cap .panel.active{position:static;height:auto!important}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div id="hdr-main">
+    <div class="logo-pill">
+      <div class="logo-mark">NIM</div>
+      <div>
+        <div class="logo-text">NIM Express × PepsiCo</div>
+        <div class="logo-sub">3PL Warehouse · Lamphun</div>
+      </div>
+    </div>
+    <div class="sep-v"></div>
+    <div class="hdr-title">
+      <h1>Sealing Issue Operations Monitor</h1>
+      <p>ติดตามและวิเคราะห์ปัญหาการซีลกล่องสินค้า · คลังสินค้าลำพูน · Sep 2023 – Mar 2026</p>
+    </div>
+    <div class="hdr-right">
+      <div id="dt-block">
+        <div id="dt-time">00:00:00</div>
+        <div id="dt-date">—</div>
+      </div>
+      <button class="btn-cap" onclick="captureScreen()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="2" y="4" width="12" height="9" rx="1.5"/><circle cx="8" cy="8.5" r="2.2"/>
+          <path d="M5.5 4 L6.5 2.5 H9.5 L10.5 4" stroke-linecap="round"/>
+        </svg>
+        Capture PNG
+      </button>
+    </div>
+  </div>
+  <div id="tab-bar">
+    <button class="tab active" onclick="gotoTab('overview',this)">
+      <span class="tab-dot" style="background:var(--sky)"></span>ภาพรวม
+    </button>
+    <div class="tab-sep"></div>
+    <button class="tab" onclick="gotoTab('year',this)">
+      <span class="tab-dot" style="background:var(--amber)"></span>รายปี
+    </button>
+    <button class="tab" onclick="gotoTab('month',this)">
+      <span class="tab-dot" style="background:var(--red)"></span>รายเดือน
+    </button>
+    <div class="tab-sep"></div>
+    <button class="tab" onclick="gotoTab('ranking',this)">
+      <span class="tab-dot" style="background:var(--green)"></span>Top Issues
+    </button>
+    <span id="tab-ctx"></span>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div id="content">
+
+  <!-- ══ OVERVIEW ══ -->
+  <div class="panel active" id="p-overview">
+    <div class="kstrip">
+      <div class="kcard kc-red">
+        <div class="kcard-top">
+          <div class="kicon ki-red"><svg viewBox="0 0 16 16" fill="none" stroke="#E8192C" stroke-width="1.7"><path d="M8 2L8 10M5 7l3 3 3-3"/><path d="M2 13h12" stroke-linecap="round"/></svg></div>
+          <div class="kbody"><div class="klabel">Total Sealing Issues</div><div class="kval">95,872</div><div class="ksub">cases · Sep 2023–Mar 2026</div></div>
+        </div>
+        <canvas class="kspk" id="spk-total" aria-label="Total sparkline"></canvas>
+      </div>
+      <div class="kcard kc-blue">
+        <div class="kcard-top">
+          <div class="kicon ki-blue"><svg viewBox="0 0 16 16" fill="none" stroke="#0057B8" stroke-width="1.7"><rect x="2" y="8" width="4" height="6" rx="1"/><rect x="6" y="5" width="4" height="9" rx="1"/><rect x="10" y="2" width="4" height="12" rx="1"/></svg></div>
+          <div class="kbody"><div class="klabel">Line PC</div><div class="kval">47,213</div><div class="ksub"><span class="tag-neu">49.2%</span> ของทั้งหมด</div></div>
+        </div>
+        <canvas class="kspk" id="spk-pc" aria-label="PC sparkline"></canvas>
+      </div>
+      <div class="kcard kc-sky">
+        <div class="kcard-top">
+          <div class="kicon ki-sky"><svg viewBox="0 0 16 16" fill="none" stroke="#00A3E0" stroke-width="1.7"><rect x="2" y="8" width="4" height="6" rx="1"/><rect x="6" y="5" width="4" height="9" rx="1"/><rect x="10" y="2" width="4" height="12" rx="1"/></svg></div>
+          <div class="kbody"><div class="klabel">Line Non-PC</div><div class="kval">48,659</div><div class="ksub"><span class="tag-neu">50.8%</span> ของทั้งหมด</div></div>
+        </div>
+        <canvas class="kspk" id="spk-npc" aria-label="NonPC sparkline"></canvas>
+      </div>
+      <div class="kcard kc-amber">
+        <div class="kcard-top">
+          <div class="kicon ki-amber"><svg viewBox="0 0 16 16" fill="none" stroke="#C8930A" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2 1.5" stroke-linecap="round"/></svg></div>
+          <div class="kbody"><div class="klabel">Avg / Active Day</div><div class="kval">128.3</div><div class="ksub">cases ต่อวันทำงาน</div></div>
+        </div>
+        <canvas class="kspk" id="spk-avg" aria-label="Avg sparkline"></canvas>
+      </div>
+      <div class="kcard kc-green">
+        <div class="kcard-top">
+          <div class="kicon ki-green"><svg viewBox="0 0 16 16" fill="none" stroke="#3E8A3E" stroke-width="1.7"><path d="M2 11L6 7l3 3 5-6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="kbody"><div class="klabel">2025 vs 2024</div><div class="kval">−19.2%</div><div class="ksub"><span class="tag-up">▼ ดีขึ้น</span> 34,016 vs 42,098</div></div>
+        </div>
+        <canvas class="kspk" id="spk-yoy" aria-label="YoY sparkline"></canvas>
+      </div>
+    </div>
+
+    <div class="g-main g21">
+      <!-- Stacked Bar Monthly -->
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">
+            <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" rx="2" fill="#0057B8"/></svg>
+            Sealing Issues รายเดือน — Sep 2023 to Mar 2026
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="legend">
+              <div class="li"><div class="ld" style="background:#0057B8"></div>Line PC</div>
+              <div class="li"><div class="ld" style="background:#00A3E0"></div>Non-PC</div>
+              <div class="li"><div class="ld" style="background:#E8192C;border-radius:50%"></div>Total</div>
+            </div>
+          </div>
+        </div>
+        <div class="cw"><canvas id="cOvBar" aria-label="Monthly sealing issues stacked bar Sep 2023 to Mar 2026">Monthly sealing issues by month.</canvas></div>
+      </div>
+
+      <!-- Right column: DOW Pattern + Slope YoY -->
+      <div style="display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden">
+
+        <!-- Day-of-Week -->
+        <div class="card" style="flex:1;min-height:0">
+          <div class="card-hdr">
+            <div class="card-title">
+              <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" rx="2" fill="#FFC72C"/></svg>
+              เฉลี่ยรายวันในสัปดาห์ — วันไหนต้องระวัง?
+            </div>
+            <span class="ctag">Mon–Sun avg cases</span>
+          </div>
+          <div id="dow-chart" style="flex:1;display:flex;flex-direction:column;min-height:0;gap:0"></div>
+        </div>
+
+        <!-- Slope Chart 2024→2025 -->
+        <div class="card" style="flex:1;min-height:0">
+          <div class="card-hdr">
+            <div class="card-title">
+              <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" rx="2" fill="#5CB85C"/></svg>
+              2024 → 2025 เดือนต่อเดือน — ดีขึ้น/แย่ลง?
+            </div>
+            <div class="legend">
+              <div class="li"><div class="ld" style="background:#E8192C;border-radius:50%"></div>แย่ลง</div>
+              <div class="li"><div class="ld" style="background:#5CB85C;border-radius:50%"></div>ดีขึ้น</div>
+            </div>
+          </div>
+          <div class="slope-wrap"><canvas id="cSlope" aria-label="Slope chart 2024 vs 2025 by month">2024 vs 2025 monthly comparison.</canvas></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ YEAR VIEW ══ -->
+  <div class="panel" id="p-year">
+    <!-- Year selector bar -->
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+      <span style="font-size:.6rem;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">เลือกปี:</span>
+      <div id="yr-selector" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+      <span class="ctag nav" onclick="gotoTab('overview',null)" style="margin-left:auto">← ภาพรวม</span>
+    </div>
+    <div class="kstrip" id="yr-kstrip"></div>
+    <div class="g-main g12" style="flex:1;min-height:0">
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">
+            <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" rx="2" fill="#FFC72C"/></svg>
+            <span id="yr-ttl">—</span>
+          </div>
+          <div class="legend">
+            <div class="li"><div class="ld" style="background:#0057B8"></div>PC</div>
+            <div class="li"><div class="ld" style="background:#00A3E0"></div>Non-PC</div>
+            <div class="li"><div class="ld" style="background:#E8192C;border-radius:50%"></div>Total</div>
+          </div>
+        </div>
+        <div class="cw"><canvas id="cYrBar" aria-label="Monthly breakdown for selected year">Year monthly breakdown.</canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">
+            <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" rx="2" fill="#5CB85C"/></svg>
+            รายละเอียดแต่ละเดือน — คลิกเพื่อดูรายวัน
+          </div>
+        </div>
+        <div class="mo-grid" id="yr-mo-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MONTH VIEW ══ -->
+  <div class="panel" id="p-month">
+    <!-- Month selector bar -->
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap">
+      <span style="font-size:.6rem;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">เลือกปี:</span>
+      <div id="mo-yr-selector" style="display:flex;gap:4px"></div>
+      <span style="font-size:.6rem;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;margin-left:6px">เดือน:</span>
+      <div id="mo-selector" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+      <div style="margin-left:auto;display:flex;gap:4px">
+        <span class="ctag nav" id="mo-back-yr" onclick="">← รายปี</span>
+        <span class="ctag nav" onclick="gotoTab('overview',null)">← ภาพรวม</span>
+      </div>
+    </div>
+    <div class="kstrip" id="mo-kstrip"></div>
+    <div class="g-main g1" style="flex:1;min-height:0">
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">
+            <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" rx="2" fill="#E8192C"/></svg>
+            <span id="mo-ttl">—</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div class="legend">
+              <div class="li"><div class="ld" style="background:#0057B8"></div>Line PC</div>
+              <div class="li"><div class="ld" style="background:#00A3E0"></div>Non-PC</div>
+              <div class="li"><div class="ld" style="background:#E8192C;border-radius:50%"></div>Total</div>
+            </div>
+            <div id="mo-prod-badge" class="prod-badge" style="display:none">
+              <span class="dot-amber"></span><span id="mo-prod-text">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="cw"><canvas id="cMoBar" aria-label="Daily sealing issues for selected month">Daily issues.</canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RANKING / HEATMAP ══ -->
+  <div class="panel" id="p-ranking">
+    <div class="g-main" style="grid-template-columns:1fr 1fr;flex:1;min-height:0">
+      <!-- Heatmap LEFT - larger -->
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">
+            <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" rx="2" fill="#0057B8"/></svg>
+            Heatmap รายวัน — ปี 2024 & 2025
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="hm-legend">
+              <span style="color:var(--tx3)">น้อย</span>
+              <div class="hm-swatch" style="background:#E6F0FF"></div>
+              <div class="hm-swatch" style="background:#93B8F0"></div>
+              <div class="hm-swatch" style="background:#4A85D6"></div>
+              <div class="hm-swatch" style="background:#E8192C"></div>
+              <span style="color:var(--tx3)">มาก</span>
+            </div>
+          </div>
+        </div>
+        <div class="hm-wrap" id="hm-container"></div>
+      </div>
+      <!-- Top 15 Table RIGHT -->
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">
+            <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="10" rx="2" fill="#E8192C"/></svg>
+            Top 15 — วันที่มี Sealing Issues สูงสุด
+          </div>
+          <span class="ctag">All time</span>
+        </div>
+        <div class="tbl-wrap">
+          <table class="rtbl">
+            <thead><tr><th width="28">#</th><th>วันที่</th><th>Line PC</th><th>Non-PC</th><th>รวม</th><th style="min-width:80px">สัดส่วน</th></tr></thead>
+            <tbody id="top-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #content -->
+
+<div id="ftr">
+  <span>NIM Express × PepsiCo · 3PL Lamphun · Sealing Issue Monitor v4 · ข้อมูล Sep 2023–Mar 2026 · Production data: Mar 2026 (3 วัน) · Sparkline · DOW Pattern · Slope Chart</span>
+  <span id="ftr-panel">Panel: Overview</span>
+</div>
+
+<script>
+/* ═══════════════════ DATA ═══════════════════ */
+const MONTHLY = [
+  {y:2023,m:9,ml:'Sep 23',pc:919,npc:1110,t:2029},
+  {y:2023,m:10,ml:'Oct 23',pc:1299,npc:1546,t:2845},
+  {y:2023,m:11,ml:'Nov 23',pc:2258,npc:1857,t:4115},
+  {y:2023,m:12,ml:'Dec 23',pc:1268,npc:1042,t:2310},
+  {y:2024,m:1,ml:'Jan 24',pc:1756,npc:1713,t:3469},
+  {y:2024,m:2,ml:'Feb 24',pc:2220,npc:1941,t:4161},
+  {y:2024,m:3,ml:'Mar 24',pc:1710,npc:1552,t:3262},
+  {y:2024,m:4,ml:'Apr 24',pc:2021,npc:1621,t:3642},
+  {y:2024,m:5,ml:'May 24',pc:1866,npc:2689,t:4555},
+  {y:2024,m:6,ml:'Jun 24',pc:1197,npc:1648,t:2845},
+  {y:2024,m:7,ml:'Jul 24',pc:1511,npc:1614,t:3125},
+  {y:2024,m:8,ml:'Aug 24',pc:1695,npc:2028,t:3723},
+  {y:2024,m:9,ml:'Sep 24',pc:1289,npc:1412,t:2701},
+  {y:2024,m:10,ml:'Oct 24',pc:1459,npc:1802,t:3261},
+  {y:2024,m:11,ml:'Nov 24',pc:2042,npc:2016,t:4058},
+  {y:2024,m:12,ml:'Dec 24',pc:1741,npc:1555,t:3296},
+  {y:2025,m:1,ml:'Jan 25',pc:1872,npc:2183,t:4055},
+  {y:2025,m:2,ml:'Feb 25',pc:1332,npc:2015,t:3347},
+  {y:2025,m:3,ml:'Mar 25',pc:1969,npc:2219,t:4188},
+  {y:2025,m:4,ml:'Apr 25',pc:1607,npc:1574,t:3181},
+  {y:2025,m:5,ml:'May 25',pc:1952,npc:1600,t:3552},
+  {y:2025,m:6,ml:'Jun 25',pc:1064,npc:1074,t:2138},
+  {y:2025,m:7,ml:'Jul 25',pc:1396,npc:1574,t:2970},
+  {y:2025,m:8,ml:'Aug 25',pc:906,npc:1237,t:2143},
+  {y:2025,m:9,ml:'Sep 25',pc:765,npc:938,t:1703},
+  {y:2025,m:10,ml:'Oct 25',pc:1232,npc:1284,t:2516},
+  {y:2025,m:11,ml:'Nov 25',pc:1196,npc:872,t:2068},
+  {y:2025,m:12,ml:'Dec 25',pc:1119,npc:1036,t:2155},
+  {y:2026,m:1,ml:'Jan 26',pc:1568,npc:1403,t:2971},
+  {y:2026,m:2,ml:'Feb 26',pc:1316,npc:1203,t:2519},
+  {y:2026,m:3,ml:'Mar 26',pc:1668,npc:1301,t:2969}
+];
+
+// Daily data — real from Excel
+const DAILY_RAW = `2023,9,4,86,70,156
+2023,9,5,85,120,205
+2023,9,6,65,103,168
+2023,9,7,35,84,119
+2023,9,8,42,57,99
+2023,9,11,54,42,96
+2023,9,12,66,55,121
+2023,9,13,32,57,89
+2023,9,14,19,35,54
+2023,9,15,7,9,16
+2023,9,18,51,56,107
+2023,9,19,38,64,102
+2023,9,20,43,56,99
+2023,9,21,21,56,77
+2023,9,22,52,25,77
+2023,9,25,111,80,191
+2023,9,26,58,37,95
+2023,9,27,7,45,52
+2023,9,28,16,39,55
+2023,9,29,31,20,51
+2023,10,2,57,72,129
+2023,10,3,43,81,124
+2023,10,4,41,178,219
+2023,10,5,60,79,139
+2023,10,6,63,57,120
+2023,10,9,101,89,190
+2023,10,10,72,73,145
+2023,10,11,39,80,119
+2023,10,12,37,67,104
+2023,10,16,133,112,245
+2023,10,17,112,99,211
+2023,10,18,44,55,99
+2023,10,19,39,80,119
+2023,10,20,43,83,126
+2023,10,21,0,25,25
+2023,10,24,62,67,129
+2023,10,25,70,66,136
+2023,10,26,68,51,119
+2023,10,27,45,10,55
+2023,10,30,87,64,151
+2023,10,31,83,58,141
+2023,11,1,147,39,186
+2023,11,2,61,74,135
+2023,11,3,45,65,110
+2023,11,6,129,128,257
+2023,11,7,130,123,253
+2023,11,8,66,90,156
+2023,11,9,75,136,211
+2023,11,10,78,84,162
+2023,11,13,111,123,234
+2023,11,14,171,78,249
+2023,11,15,81,83,164
+2023,11,16,88,92,180
+2023,11,17,67,36,103
+2023,11,20,187,71,258
+2023,11,21,165,142,307
+2023,11,22,67,114,181
+2023,11,23,85,109,194
+2023,11,24,89,53,142
+2023,11,28,207,86,293
+2023,11,29,99,58,157
+2023,11,30,110,73,183
+2023,12,1,94,29,123
+2023,12,4,0,9,9
+2023,12,6,0,69,69
+2023,12,7,0,70,70
+2023,12,8,0,65,65
+2023,12,9,0,19,19
+2023,12,12,91,86,177
+2023,12,13,121,123,244
+2023,12,14,117,61,178
+2023,12,15,103,28,131
+2023,12,18,93,122,215
+2023,12,19,145,74,219
+2023,12,20,144,50,194
+2023,12,21,109,18,127
+2023,12,24,0,18,18
+2023,12,25,64,100,164
+2023,12,26,56,39,95
+2023,12,27,75,55,130
+2023,12,28,56,7,63
+2024,1,2,238,91,329
+2024,1,3,153,94,247
+2024,1,4,132,89,221
+2024,1,5,57,74,131
+2024,1,6,0,15,15
+2024,1,8,164,100,264
+2024,1,9,127,137,264
+2024,1,10,138,68,206
+2024,1,11,46,76,122
+2024,1,15,131,101,232
+2024,1,16,120,86,206
+2024,1,17,54,89,143
+2024,1,18,103,87,190
+2024,1,19,46,54,100
+2024,1,21,0,11,11
+2024,1,22,14,69,83
+2024,1,23,34,65,99
+2024,1,24,35,60,95
+2024,1,25,32,58,90
+2024,1,26,25,27,52
+2024,1,27,0,14,14
+2024,1,29,31,80,111
+2024,1,30,41,100,141
+2024,1,31,35,68,103
+2024,2,1,48,86,134
+2024,2,2,77,48,125
+2024,2,3,0,23,23
+2024,2,5,0,55,55
+2024,2,6,77,124,201
+2024,2,7,128,123,251
+2024,2,8,185,135,320
+2024,2,9,107,60,167
+2024,2,12,136,123,259
+2024,2,13,168,125,293
+2024,2,14,156,102,258
+2024,2,15,125,88,213
+2024,2,16,91,51,142
+2024,2,19,124,78,202
+2024,2,20,110,74,184
+2024,2,21,76,76,152
+2024,2,22,22,87,109
+2024,2,23,61,82,143
+2024,2,24,0,3,3
+2024,2,26,109,66,175
+2024,2,27,112,94,206
+2024,2,28,161,104,265
+2024,2,29,147,134,281
+2024,3,1,92,87,179
+2024,3,2,0,47,47
+2024,3,4,101,112,213
+2024,3,5,137,126,263
+2024,3,6,64,84,148
+2024,3,7,24,73,97
+2024,3,8,31,29,60
+2024,3,11,61,63,124
+2024,3,12,153,79,232
+2024,3,13,105,66,171
+2024,3,14,115,90,205
+2024,3,15,0,43,43
+2024,3,18,67,65,132
+2024,3,19,83,103,186
+2024,3,20,130,79,209
+2024,3,21,101,54,155
+2024,3,22,99,33,132
+2024,3,25,46,37,83
+2024,3,26,93,50,143
+2024,3,27,54,67,121
+2024,3,28,78,86,164
+2024,3,29,76,79,155
+2024,4,1,127,38,165
+2024,4,2,174,88,262
+2024,4,3,100,45,145
+2024,4,4,91,65,156
+2024,4,5,79,99,178
+2024,4,6,0,57,57
+2024,4,8,114,81,195
+2024,4,9,97,60,157
+2024,4,10,114,122,236
+2024,4,11,101,83,184
+2024,4,12,124,38,162
+2024,4,18,89,69,158
+2024,4,19,87,63,150
+2024,4,20,94,42,136
+2024,4,22,150,118,268
+2024,4,23,124,97,221
+2024,4,24,58,84,142
+2024,4,25,45,75,120
+2024,4,26,61,97,158
+2024,4,27,0,17,17
+2024,4,29,119,90,209
+2024,4,30,73,93,166
+2024,5,1,0,58,58
+2024,5,2,133,118,251
+2024,5,3,38,57,95
+2024,5,4,0,30,30
+2024,5,6,101,87,188
+2024,5,7,73,89,162
+2024,5,8,120,84,204
+2024,5,9,55,93,148
+2024,5,10,44,71,115
+2024,5,11,0,8,8
+2024,5,13,114,109,223
+2024,5,14,116,110,226
+2024,5,15,111,153,264
+2024,5,16,63,136,199
+2024,5,17,39,102,141
+2024,5,18,0,31,31
+2024,5,20,131,118,249
+2024,5,21,115,184,299
+2024,5,22,0,140,140
+2024,5,23,107,108,215
+2024,5,24,129,190,319
+2024,5,25,0,99,99
+2024,5,27,121,121,242
+2024,5,28,87,85,172
+2024,5,29,75,123,198
+2024,5,30,58,126,184
+2024,5,31,36,59,95
+2024,6,1,0,17,17
+2024,6,3,0,93,93
+2024,6,4,52,61,113
+2024,6,5,97,110,207
+2024,6,6,69,55,124
+2024,6,7,43,27,70
+2024,6,8,0,30,30
+2024,6,10,42,33,75
+2024,6,11,73,77,150
+2024,6,12,76,61,137
+2024,6,13,37,80,117
+2024,6,14,31,72,103
+2024,6,15,0,45,45
+2024,6,17,104,84,188
+2024,6,18,82,81,163
+2024,6,19,111,93,204
+2024,6,20,46,75,121
+2024,6,21,30,68,98
+2024,6,22,0,52,52
+2024,6,24,76,78,154
+2024,6,25,73,93,166
+2024,6,26,68,102,170
+2024,6,27,43,66,109
+2024,6,28,44,54,98
+2024,6,29,0,41,41
+2024,7,1,82,113,195
+2024,7,2,94,92,186
+2024,7,3,74,82,156
+2024,7,4,9,10,19
+2024,7,5,0,5,5
+2024,7,8,110,81,191
+2024,7,9,101,100,201
+2024,7,10,65,61,126
+2024,7,11,36,69,105
+2024,7,12,23,45,68
+2024,7,13,0,5,5
+2024,7,15,60,67,127
+2024,7,16,73,103,176
+2024,7,17,91,92,183
+2024,7,18,124,94,218
+2024,7,19,30,87,117
+2024,7,20,0,7,7
+2024,7,22,0,26,26
+2024,7,23,93,77,170
+2024,7,24,97,108,205
+2024,7,25,117,138,255
+2024,7,27,94,47,141
+2024,7,29,0,20,20
+2024,7,30,64,28,92
+2024,7,31,74,57,131
+2024,8,1,76,72,148
+2024,8,2,71,169,240
+2024,8,3,0,22,22
+2024,8,5,109,75,184
+2024,8,6,115,92,207
+2024,8,7,82,73,155
+2024,8,8,41,82,123
+2024,8,9,25,58,83
+2024,8,10,0,23,23
+2024,8,12,0,4,4
+2024,8,13,125,109,234
+2024,8,14,120,126,246
+2024,8,15,72,74,146
+2024,8,16,72,59,131
+2024,8,17,0,32,32
+2024,8,19,114,134,248
+2024,8,20,81,92,173
+2024,8,21,81,119,200
+2024,8,22,88,98,186
+2024,8,23,64,61,125
+2024,8,24,0,36,36
+2024,8,26,71,79,150
+2024,8,27,67,69,136
+2024,8,28,106,92,198
+2024,8,29,94,70,164
+2024,8,30,21,72,93
+2024,8,31,0,36,36
+2024,9,2,68,100,168
+2024,9,3,80,106,186
+2024,9,4,74,106,180
+2024,9,5,52,74,126
+2024,9,6,52,74,126
+2024,9,7,0,14,14
+2024,9,9,82,93,175
+2024,9,10,71,75,146
+2024,9,11,72,75,147
+2024,9,12,37,41,78
+2024,9,13,36,18,54
+2024,9,16,56,52,108
+2024,9,17,85,82,167
+2024,9,18,70,57,127
+2024,9,19,88,70,158
+2024,9,20,34,43,77
+2024,9,21,0,10,10
+2024,9,23,87,66,153
+2024,9,24,79,70,149
+2024,9,25,78,60,138
+2024,9,26,55,67,122
+2024,9,27,5,15,20
+2024,9,30,28,44,72
+2024,10,1,36,54,90
+2024,10,2,21,51,72
+2024,10,3,73,57,130
+2024,10,4,44,38,82
+2024,10,5,7,0,7
+2024,10,7,67,73,140
+2024,10,8,96,83,179
+2024,10,9,80,71,151
+2024,10,10,67,96,163
+2024,10,11,30,49,79
+2024,10,12,0,8,8
+2024,10,14,0,3,3
+2024,10,15,66,86,152
+2024,10,16,73,75,148
+2024,10,17,83,95,178
+2024,10,18,94,97,191
+2024,10,19,0,17,17
+2024,10,21,81,126,207
+2024,10,22,79,71,150
+2024,10,23,54,106,160
+2024,10,24,58,105,163
+2024,10,25,39,49,88
+2024,10,26,0,5,5
+2024,10,28,109,89,198
+2024,10,29,91,112,203
+2024,10,30,60,102,162
+2024,10,31,51,84,135
+2024,11,1,42,77,119
+2024,11,2,0,5,5
+2024,11,4,157,140,297
+2024,11,5,129,124,253
+2024,11,6,147,105,252
+2024,11,7,127,101,228
+2024,11,8,143,122,265
+2024,11,9,0,5,5
+2024,11,11,112,101,213
+2024,11,12,120,117,237
+2024,11,13,113,98,211
+2024,11,14,109,69,178
+2024,11,18,103,96,199
+2024,11,19,98,82,180
+2024,11,20,107,112,219
+2024,11,21,103,124,227
+2024,11,22,57,96,153
+2024,11,23,0,5,5
+2024,11,25,109,103,212
+2024,11,26,87,86,173
+2024,11,27,82,62,144
+2024,11,28,53,91,144
+2024,11,29,44,86,130
+2024,11,30,0,9,9
+2024,12,2,94,114,208
+2024,12,3,113,109,222
+2024,12,4,119,118,237
+2024,12,5,95,64,159
+2024,12,6,4,24,28
+2024,12,9,99,80,179
+2024,12,10,143,108,251
+2024,12,11,102,52,154
+2024,12,12,41,37,78
+2024,12,13,74,76,150
+2024,12,14,0,8,8
+2024,12,16,89,63,152
+2024,12,17,85,62,147
+2024,12,18,65,86,151
+2024,12,19,137,119,256
+2024,12,20,20,29,49
+2024,12,22,33,69,102
+2024,12,23,79,72,151
+2024,12,24,101,73,174
+2024,12,25,119,97,216
+2024,12,26,105,81,186
+2024,12,27,24,14,38
+2025,1,2,64,62,126
+2025,1,3,75,81,156
+2025,1,4,84,76,160
+2025,1,5,48,45,93
+2025,1,6,79,81,160
+2025,1,7,53,80,133
+2025,1,8,78,62,140
+2025,1,9,98,74,172
+2025,1,10,62,75,137
+2025,1,11,23,41,64
+2025,1,12,0,7,7
+2025,1,13,155,123,278
+2025,1,14,104,55,159
+2025,1,15,63,64,127
+2025,1,16,92,121,213
+2025,1,17,75,49,124
+2025,1,19,0,17,17
+2025,1,20,40,46,86
+2025,1,21,80,82,162
+2025,1,22,88,135,223
+2025,1,23,79,84,163
+2025,1,24,81,83,164
+2025,1,25,0,109,109
+2025,1,26,0,12,12
+2025,1,27,78,79,157
+2025,1,28,57,84,141
+2025,1,29,60,166,226
+2025,1,30,92,106,198
+2025,1,31,64,84,148
+2025,2,1,0,104,104
+2025,2,2,0,14,14
+2025,2,3,78,123,201
+2025,2,4,72,107,179
+2025,2,5,54,74,128
+2025,2,6,45,83,128
+2025,2,7,26,65,91
+2025,2,8,0,33,33
+2025,2,9,0,8,8
+2025,2,10,59,103,162
+2025,2,11,58,99,157
+2025,2,12,0,66,66
+2025,2,13,71,161,232
+2025,2,14,65,112,177
+2025,2,15,0,114,114
+2025,2,17,80,102,182
+2025,2,18,60,114,174
+2025,2,19,76,54,130
+2025,2,20,90,71,161
+2025,2,21,208,65,273
+2025,2,22,71,35,106
+2025,2,24,41,41,82
+2025,2,25,34,73,107
+2025,2,26,71,97,168
+2025,2,27,42,58,100
+2025,2,28,31,39,70
+2025,3,2,0,14,14
+2025,3,3,103,116,219
+2025,3,4,207,172,379
+2025,3,5,168,248,416
+2025,3,6,131,60,191
+2025,3,7,64,55,119
+2025,3,8,0,21,21
+2025,3,9,0,6,6
+2025,3,10,131,123,254
+2025,3,11,163,115,278
+2025,3,12,103,104,207
+2025,3,13,134,140,274
+2025,3,14,64,77,141
+2025,3,15,0,42,42
+2025,3,17,42,20,62
+2025,3,18,105,92,197
+2025,3,19,77,80,157
+2025,3,20,58,112,170
+2025,3,21,21,28,49
+2025,3,23,0,2,2
+2025,3,24,43,86,129
+2025,3,25,85,115,200
+2025,3,26,51,123,174
+2025,3,27,48,126,174
+2025,3,28,54,51,105
+2025,3,31,117,91,208
+2025,4,1,76,17,93
+2025,4,2,158,73,231
+2025,4,3,54,73,127
+2025,4,4,54,69,123
+2025,4,5,68,33,101
+2025,4,6,23,11,34
+2025,4,7,44,75,119
+2025,4,8,50,88,138
+2025,4,9,55,68,123
+2025,4,10,42,54,96
+2025,4,11,43,70,113
+2025,4,12,0,13,13
+2025,4,17,29,33,62
+2025,4,18,32,38,70
+2025,4,19,35,31,66
+2025,4,20,69,54,123
+2025,4,21,62,65,127
+2025,4,22,99,84,183
+2025,4,23,52,72,124
+2025,4,24,74,159,233
+2025,4,25,68,91,159
+2025,4,26,61,67,128
+2025,4,27,0,9,9
+2025,4,28,92,82,174
+2025,4,29,160,64,224
+2025,4,30,107,81,188
+2025,5,1,102,80,182
+2025,5,2,103,53,156
+2025,5,3,95,36,131
+2025,5,5,146,110,256
+2025,5,6,65,90,155
+2025,5,7,80,77,157
+2025,5,8,58,58,116
+2025,5,9,49,34,83
+2025,5,10,28,6,34
+2025,5,12,80,11,91
+2025,5,13,80,78,158
+2025,5,14,62,53,115
+2025,5,15,56,74,130
+2025,5,16,48,51,99
+2025,5,17,23,1,24
+2025,5,19,146,110,256
+2025,5,20,92,110,202
+2025,5,21,111,91,202
+2025,5,22,80,49,129
+2025,5,23,72,64,136
+2025,5,24,0,15,15
+2025,5,26,104,90,194
+2025,5,27,150,99,249
+2025,5,28,69,54,123
+2025,5,29,49,50,99
+2025,5,30,4,56,60
+2025,6,1,4,3,7
+2025,6,2,3,4,7
+2025,6,4,63,33,96
+2025,6,5,37,44,81
+2025,6,6,32,16,48
+2025,6,7,0,1,1
+2025,6,9,60,86,146
+2025,6,10,72,132,204
+2025,6,11,57,53,110
+2025,6,12,41,53,94
+2025,6,13,87,84,171
+2025,6,14,0,15,15
+2025,6,16,108,52,160
+2025,6,17,23,54,77
+2025,6,18,52,46,98
+2025,6,19,52,32,84
+2025,6,20,68,45,113
+2025,6,23,73,62,135
+2025,6,24,39,46,85
+2025,6,25,12,52,64
+2025,6,26,87,67,154
+2025,6,27,62,35,97
+2025,6,30,32,59,91
+2025,7,1,21,85,106
+2025,7,2,47,77,124
+2025,7,3,130,99,229
+2025,7,4,76,81,157
+2025,7,7,106,110,216
+2025,7,8,79,80,159
+2025,7,9,73,92,165
+2025,7,10,53,79,132
+2025,7,11,0,16,16
+2025,7,14,53,61,114
+2025,7,15,61,82,143
+2025,7,16,60,58,118
+2025,7,17,33,38,71
+2025,7,18,35,34,69
+2025,7,19,0,29,29
+2025,7,21,87,72,159
+2025,7,22,87,65,152
+2025,7,23,100,112,212
+2025,7,24,84,73,157
+2025,7,25,21,40,61
+2025,7,29,85,66,151
+2025,7,30,52,59,111
+2025,7,31,53,66,119
+2025,8,1,34,29,63
+2025,8,2,0,43,43
+2025,8,4,50,75,125
+2025,8,5,66,58,124
+2025,8,6,36,55,91
+2025,8,7,30,20,50
+2025,8,11,63,56,119
+2025,8,12,32,47,79
+2025,8,13,76,69,145
+2025,8,14,37,59,96
+2025,8,15,47,46,93
+2025,8,18,38,70,108
+2025,8,19,47,73,120
+2025,8,20,43,82,125
+2025,8,21,65,67,132
+2025,8,22,31,36,67
+2025,8,25,56,99,155
+2025,8,26,55,65,120
+2025,8,27,31,58,89
+2025,8,28,43,79,122
+2025,8,29,26,51,77
+2025,9,1,42,60,102
+2025,9,2,54,56,110
+2025,9,3,23,42,65
+2025,9,4,44,55,99
+2025,9,5,0,42,42
+2025,9,6,0,16,16
+2025,9,8,66,58,124
+2025,9,9,19,32,51
+2025,9,10,25,49,74
+2025,9,11,48,76,124
+2025,9,12,34,44,78
+2025,9,15,49,42,91
+2025,9,16,42,38,80
+2025,9,17,37,23,60
+2025,9,18,15,29,44
+2025,9,19,28,32,60
+2025,9,22,41,39,80
+2025,9,23,50,23,73
+2025,9,24,35,35,70
+2025,9,25,15,35,50
+2025,9,26,30,28,58
+2025,9,29,31,31,62
+2025,9,30,37,53,90
+2025,10,1,33,23,56
+2025,10,2,40,54,94
+2025,10,3,6,29,35
+2025,10,4,0,3,3
+2025,10,6,65,47,112
+2025,10,7,51,52,103
+2025,10,8,47,25,72
+2025,10,9,28,28,56
+2025,10,10,28,41,69
+2025,10,11,0,29,29
+2025,10,13,0,34,34
+2025,10,14,92,71,163
+2025,10,15,50,58,108
+2025,10,16,31,41,72
+2025,10,17,31,51,82
+2025,10,18,0,43,43
+2025,10,20,83,73,156
+2025,10,21,67,64,131
+2025,10,22,80,69,149
+2025,10,23,43,32,75
+2025,10,24,69,51,120
+2025,10,25,24,34,58
+2025,10,27,41,50,91
+2025,10,28,77,68,145
+2025,10,29,79,82,161
+2025,10,30,102,72,174
+2025,10,31,65,60,125
+2025,11,3,71,36,107
+2025,11,4,46,47,93
+2025,11,5,40,20,60
+2025,11,6,51,53,104
+2025,11,7,78,73,151
+2025,11,8,34,10,44
+2025,11,10,100,55,155
+2025,11,11,60,66,126
+2025,11,12,88,73,161
+2025,11,13,58,45,103
+2025,11,14,55,49,104
+2025,11,15,40,20,60
+2025,11,17,48,33,81
+2025,11,18,89,46,135
+2025,11,19,31,26,57
+2025,11,20,54,25,79
+2025,11,21,18,20,38
+2025,11,24,53,49,102
+2025,11,25,35,37,72
+2025,11,26,21,22,43
+2025,11,27,36,37,73
+2025,11,28,52,30,82
+2025,11,29,38,0,38
+2025,12,1,25,18,43
+2025,12,2,55,47,102
+2025,12,3,51,49,100
+2025,12,4,55,59,114
+2025,12,5,37,17,54
+2025,12,8,63,59,122
+2025,12,9,37,46,83
+2025,12,10,43,41,84
+2025,12,11,32,49,81
+2025,12,12,70,45,115
+2025,12,13,16,25,41
+2025,12,15,44,43,87
+2025,12,16,59,43,102
+2025,12,17,33,39,72
+2025,12,18,44,50,94
+2025,12,19,3,4,7
+2025,12,21,64,50,114
+2025,12,22,59,49,108
+2025,12,23,46,63,109
+2025,12,24,48,49,97
+2025,12,25,65,50,115
+2025,12,26,37,33,70
+2025,12,27,42,20,62
+2025,12,28,7,0,7
+2025,12,29,65,69,134
+2025,12,30,19,19,38
+2026,1,4,22,0,22
+2026,1,5,14,18,32
+2026,1,6,68,63,131
+2026,1,7,37,49,86
+2026,1,8,61,107,168
+2026,1,9,82,96,178
+2026,1,10,18,14,32
+2026,1,11,78,0,78
+2026,1,12,46,53,99
+2026,1,13,82,72,154
+2026,1,14,103,88,191
+2026,1,15,64,44,108
+2026,1,16,78,71,149
+2026,1,17,21,19,40
+2026,1,18,3,0,3
+2026,1,19,103,82,185
+2026,1,20,88,77,165
+2026,1,21,72,68,140
+2026,1,22,64,57,121
+2026,1,23,40,42,82
+2026,1,24,87,72,159
+2026,1,25,28,4,32
+2026,1,26,101,62,163
+2026,1,27,82,68,150
+2026,1,28,80,93,173
+2026,1,29,46,84,130
+2026,2,2,43,67,110
+2026,2,3,52,46,98
+2026,2,4,57,60,117
+2026,2,5,20,50,70
+2026,2,6,19,46,65
+2026,2,7,0,17,17
+2026,2,9,22,28,50
+2026,2,10,56,44,100
+2026,2,11,61,56,117
+2026,2,12,51,60,111
+2026,2,13,109,61,170
+2026,2,14,19,8,27
+2026,2,16,50,46,96
+2026,2,17,66,91,157
+2026,2,18,66,68,134
+2026,2,19,41,36,77
+2026,2,20,77,49,126
+2026,2,21,69,24,93
+2026,2,23,83,76,159
+2026,2,24,60,64,124
+2026,2,25,63,61,124
+2026,2,26,68,43,111
+2026,2,27,83,69,152
+2026,2,28,81,33,114
+2026,3,2,62,70,132
+2026,3,3,94,0,94
+2026,3,4,78,79,157
+2026,3,5,43,40,83
+2026,3,6,59,42,101
+2026,3,9,37,63,100
+2026,3,10,36,30,66
+2026,3,11,74,56,130
+2026,3,12,57,50,107
+2026,3,13,64,41,105
+2026,3,16,56,74,130
+2026,3,17,41,49,90
+2026,3,18,58,45,103
+2026,3,19,64,51,115
+2026,3,20,70,73,143
+2026,3,21,51,13,64
+2026,3,22,9,0,9
+2026,3,23,84,72,156
+2026,3,24,78,77,155
+2026,3,25,82,79,161
+2026,3,26,84,73,157
+2026,3,27,65,55,120
+2026,3,28,45,27,72
+2026,3,29,72,0,72
+2026,3,30,97,68,165
+2026,3,31,108,74,182`.trim().split('\n').map(r=>{const[y,m,d,pc,npc,t]=r.split(',').map(Number);return{y,m,d,pc,npc,t}});
+
+// Production data (only 3 days with real data)
+const PROD_DATA = {
+  '2026-3-2':{ppc:29609,pnpc:32890,ptot:62499},
+  '2026-3-3':{ppc:37806,pnpc:0,ptot:37806},
+  '2026-3-4':{ppc:28922,pnpc:22826,ptot:51748}
+};
+
+const MEN = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MTH = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+// Lookup helpers
+const DAILY_BY_YM = {};
+DAILY_RAW.forEach(r=>{
+  const k=`${r.y}-${r.m}`;
+  if(!DAILY_BY_YM[k]) DAILY_BY_YM[k]=[];
+  DAILY_BY_YM[k].push(r);
+});
+
+/* ═══════════════════ CHART DEFAULTS ═══════════════════ */
+Chart.defaults.font.family="'IBM Plex Sans Thai',sans-serif";
+Chart.defaults.color='#6B82A0';
+Chart.defaults.plugins.legend.display=false;
+Chart.defaults.plugins.tooltip.backgroundColor='#001A3A';
+Chart.defaults.plugins.tooltip.titleFont={family:"'IBM Plex Sans Thai'",weight:'700',size:11};
+Chart.defaults.plugins.tooltip.bodyFont={family:"'IBM Plex Sans Thai'",size:10};
+Chart.defaults.plugins.tooltip.padding=10;
+Chart.defaults.plugins.tooltip.cornerRadius=7;
+Chart.defaults.plugins.tooltip.mode='index';
+Chart.defaults.plugins.tooltip.intersect=false;
+
+const C={B:'#0057B8',S:'#00A3E0',R:'#E8192C',A:'#FFC72C',G:'#5CB85C'};
+const charts={};
+function mk(id,cfg){if(charts[id]){charts[id].destroy()}charts[id]=new Chart(document.getElementById(id),cfg)}
+
+/* ═══════════════════ SPARKLINE DATA ═══════════════════ */
+const SPK_TOTAL=[3181,3552,2138,2970,2143,1703,2516,2068,2155,2971,2519,2969];
+const SPK_PC   =[1607,1952,1064,1396, 906, 765,1232,1196,1119,1568,1316,1668];
+const SPK_NPC  =[1574,1600,1074,1574,1237, 938,1284, 872,1036,1403,1203,1301];
+const SPK_AVG  =SPK_TOTAL.map(v=>Math.round(v/22));
+
+// DOW data: [Mon,Tue,Wed,Thu,Fri,Sat,Sun] avg cases
+const DOW_DATA=[
+  {lbl:'Mon',avg:148.5,col:'#0057B8'},
+  {lbl:'Tue',avg:162.8,col:'#E8192C'},
+  {lbl:'Wed',avg:150.0,col:'#0057B8'},
+  {lbl:'Thu',avg:139.0,col:'#0057B8'},
+  {lbl:'Fri',avg:108.5,col:'#FFC72C'},
+  {lbl:'Sat',avg:44.5, col:'#6B82A0'},
+  {lbl:'Sun',avg:33.9, col:'#6B82A0'}
+];
+
+function mkSparkline(id, data, color){
+  const existing = Chart.getChart(id);
+  if(existing) existing.destroy();
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  const mn=Math.min(...data), mx=Math.max(...data);
+  const trend = data[data.length-1] < data[0] ? '#5CB85C' : color;
+  new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:data.map((_,i)=>i),
+      datasets:[{
+        data,borderColor:trend,borderWidth:1.5,
+        pointRadius:0,pointHoverRadius:0,
+        fill:{target:'origin',above:trend+'18'},
+        tension:.4
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      scales:{x:{display:false},y:{display:false,min:mn*0.85,max:mx*1.05}},
+      animation:{duration:600}
+    }
+  });
+}
+
+function initSparklines(){
+  mkSparkline('spk-total', SPK_TOTAL, '#E8192C');
+  mkSparkline('spk-pc',    SPK_PC,    '#0057B8');
+  mkSparkline('spk-npc',   SPK_NPC,   '#00A3E0');
+  mkSparkline('spk-avg',   SPK_AVG,   '#FFC72C');
+  // YoY sparkline: monthly totals 2024 vs 2025 diff
+  const d24=[3469,4161,3262,3642,4555,2845,3125,3723,2701,3261,4058,3296];
+  const d25=[4055,3347,4188,3181,3552,2138,2970,2143,1703,2516,2068,2155];
+  const diff=d25.map((v,i)=>v-d24[i]);
+  mkSparkline('spk-yoy', diff, '#5CB85C');
+}
+
+/* ═══════════════════ DOW CHART ═══════════════════ */
+function buildDOWChart(){
+  const container=document.getElementById('dow-chart');
+  if(!container) return;
+  container.innerHTML='';
+
+  const maxAvg=Math.max(...DOW_DATA.map(d=>d.avg));
+  const rowHeight=container.clientHeight||120;
+
+  // Build custom bar chart with labels
+  container.style.cssText='flex:1;display:flex;flex-direction:column;gap:4px;padding:4px 0;min-height:0;overflow:hidden';
+
+  const barsWrap=document.createElement('div');
+  barsWrap.style.cssText='flex:1;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;align-items:end;min-height:0';
+
+  DOW_DATA.forEach((d,i)=>{
+    const col=document.createElement('div');
+    col.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;justify-content:flex-end';
+
+    const val=document.createElement('div');
+    val.style.cssText=`font-size:.6rem;font-weight:700;color:${d.col==='#6B82A0'?'var(--tx3)':d.col};font-family:var(--mono)`;
+    val.textContent=d.avg.toFixed(0);
+
+    const bar=document.createElement('div');
+    const pct=Math.round(d.avg/maxAvg*100);
+    const isWeekend=i>=5;
+    bar.style.cssText=`width:65%;border-radius:4px 4px 0 0;background:${d.col};opacity:${isWeekend?.5:1};transition:.3s`;
+    bar.style.height=`${Math.max(pct,4)}%`;
+
+    // Highlight Tue (peak)
+    if(i===1) bar.style.boxShadow=`0 0 0 2px ${d.col}40`;
+
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:.6rem;font-weight:600;color:var(--tx3);font-family:var(--mono);margin-top:2px';
+    lbl.textContent=d.lbl;
+
+    col.appendChild(val);
+    col.appendChild(bar);
+    col.appendChild(lbl);
+    barsWrap.appendChild(col);
+  });
+
+  // Peak annotation
+  const ann=document.createElement('div');
+  ann.style.cssText='font-size:.55rem;color:var(--red);font-weight:600;text-align:center;padding-top:2px;flex-shrink:0';
+  ann.textContent='▲ Tuesday สูงสุด avg 162.8 — Weekend ลดลง 78%';
+
+  container.appendChild(barsWrap);
+  container.appendChild(ann);
+}
+
+/* ═══════════════════ SLOPE CHART 2024→2025 ═══════════════════ */
+function buildSlopeChart(){
+  const d24=[3469,4161,3262,3642,4555,2845,3125,3723,2701,3261,4058,3296];
+  const d25=[4055,3347,4188,3181,3552,2138,2970,2143,1703,2516,2068,2155];
+  const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  mk('cSlope',{
+    type:'bar',
+    data:{
+      labels:MO,
+      datasets:[
+        {
+          label:'2024→2025 Change',
+          data:d25.map((v,i)=>v-d24[i]),
+          backgroundColor:d25.map((v,i)=>v<d24[i]?'#5CB85C99':'#E8192C99'),
+          borderColor:d25.map((v,i)=>v<d24[i]?'#5CB85C':'#E8192C'),
+          borderWidth:1,borderRadius:3,borderSkipped:false
+        }
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label:ctx=>{
+            const v=ctx.parsed.y;
+            const i=ctx.dataIndex;
+            return [`${v>0?'▲ แย่ลง':'▼ ดีขึ้น'} ${Math.abs(v).toLocaleString()} cases`,
+                    `2024: ${d24[i].toLocaleString()} → 2025: ${d25[i].toLocaleString()}`];
+          }
+        }}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:8}}},
+        y:{
+          grid:{color:'#EEF2F8'},
+          ticks:{font:{size:8},callback:v=>v>0?`+${v.toLocaleString()}`:v.toLocaleString()},
+          border:{dash:[3,3]}
+        }
+      }
+    }
+  });
+}
+
+/* ═══════════════════ OVERVIEW CHARTS ═══════════════════ */
+function initOverview(){
+  // Stacked bar monthly
+  mk('cOvBar',{type:'bar',
+    data:{
+      labels:MONTHLY.map(d=>d.ml),
+      datasets:[
+        {label:'Line PC',data:MONTHLY.map(d=>d.pc),backgroundColor:C.B+'CC',borderRadius:2,borderSkipped:false,stack:'s'},
+        {label:'Non-PC',data:MONTHLY.map(d=>d.npc),backgroundColor:C.S+'CC',borderRadius:2,borderSkipped:false,stack:'s'},
+        {label:'Total',data:MONTHLY.map(d=>d.t),type:'line',borderColor:C.R,borderWidth:1.5,
+         pointRadius:2,pointBackgroundColor:C.R,tension:.35,fill:false,stack:undefined}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{font:{size:8},maxRotation:50,autoSkip:false}},
+        y:{stacked:true,grid:{color:'#EEF2F8'},ticks:{font:{size:8}},border:{dash:[3,3]}}
+      }
+    }
+  });
+
+  initSparklines();
+  buildDOWChart();
+  buildSlopeChart();
+}
+
+/* ═══════════════════ YEAR VIEW ═══════════════════ */
+let curYear=2024, curFromOv=false;
+
+function buildYearSelector(activeYr){
+  const c=document.getElementById('yr-selector');
+  if(!c) return;
+  c.innerHTML='';
+  [2023,2024,2025,2026].forEach(yr=>{
+    const b=document.createElement('button');
+    b.className='sel-pill'+(yr===activeYr?' active':'');
+    b.textContent=yr+(yr===2023?' (ก.ย.–ธ.ค.)':yr===2026?' (ม.ค.–มี.ค.)':'');
+    b.onclick=()=>{ curYear=yr; renderYear(yr); };
+    c.appendChild(b);
+  });
+}
+
+function gotoYear(yr){
+  curYear=yr; curFromOv=true;
+  const tabEl=document.querySelectorAll('.tab')[1];
+  gotoTab('year',tabEl);
+  renderYear(yr);
+}
+
+function renderYear(yr){
+  buildYearSelector(yr);
+  const mths=MONTHLY.filter(d=>d.y===yr);
+  const tot=mths.reduce((s,r)=>s+r.t,0);
+  const peak=Math.max(...mths.map(r=>r.t));
+  const avg=Math.round(tot/mths.length);
+
+  document.getElementById('yr-ttl').textContent=`รายเดือน — ปี ${yr}`;
+  document.getElementById('tab-ctx').textContent=`YEAR ${yr}`;
+  document.getElementById('ftr-panel').textContent=`Year: ${yr}`;
+
+  document.getElementById('yr-kstrip').innerHTML=`
+    <div class="kcard kc-red"><div class="kcard-top"><div class="kicon ki-red"><svg viewBox="0 0 16 16" fill="none" stroke="#E8192C" stroke-width="1.7"><path d="M8 2L8 10M5 7l3 3 3-3"/><path d="M2 13h12" stroke-linecap="round"/></svg></div><div class="kbody"><div class="klabel">Total ${yr}</div><div class="kval">${tot.toLocaleString()}</div><div class="ksub">cases ทั้งปี</div></div></div></div>
+    <div class="kcard kc-blue"><div class="kcard-top"><div class="kicon ki-blue"><svg viewBox="0 0 16 16" fill="none" stroke="#0057B8" stroke-width="1.7"><rect x="2" y="8" width="4" height="6" rx="1"/><rect x="6" y="5" width="4" height="9" rx="1"/><rect x="10" y="2" width="4" height="12" rx="1"/></svg></div><div class="kbody"><div class="klabel">Line PC</div><div class="kval">${mths.reduce((s,r)=>s+r.pc,0).toLocaleString()}</div><div class="ksub">${(mths.reduce((s,r)=>s+r.pc,0)/tot*100).toFixed(1)}%</div></div></div></div>
+    <div class="kcard kc-sky"><div class="kcard-top"><div class="kicon ki-sky"><svg viewBox="0 0 16 16" fill="none" stroke="#00A3E0" stroke-width="1.7"><rect x="2" y="8" width="4" height="6" rx="1"/><rect x="6" y="5" width="4" height="9" rx="1"/><rect x="10" y="2" width="4" height="12" rx="1"/></svg></div><div class="kbody"><div class="klabel">Line Non-PC</div><div class="kval">${mths.reduce((s,r)=>s+r.npc,0).toLocaleString()}</div><div class="ksub">${(mths.reduce((s,r)=>s+r.npc,0)/tot*100).toFixed(1)}%</div></div></div></div>
+    <div class="kcard kc-amber"><div class="kcard-top"><div class="kicon ki-amber"><svg viewBox="0 0 16 16" fill="none" stroke="#C8930A" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2 1.5" stroke-linecap="round"/></svg></div><div class="kbody"><div class="klabel">Avg / เดือน</div><div class="kval">${avg.toLocaleString()}</div><div class="ksub">cases ต่อเดือน</div></div></div></div>
+    <div class="kcard kc-green"><div class="kcard-top"><div class="kicon ki-green"><svg viewBox="0 0 16 16" fill="none" stroke="#3E8A3E" stroke-width="1.7"><path d="M3 8h10M8 3v10" stroke-linecap="round"/></svg></div><div class="kbody"><div class="klabel">Peak เดือน</div><div class="kval">${peak.toLocaleString()}</div><div class="ksub">${mths.find(r=>r.t===peak)?.ml||'—'}</div></div></div></div>
+  `;
+
+  mk('cYrBar',{type:'bar',
+    data:{
+      labels:mths.map(r=>MEN[r.m]),
+      datasets:[
+        {label:'Line PC',data:mths.map(r=>r.pc),backgroundColor:C.B+'CC',borderRadius:3,borderSkipped:false,stack:'s'},
+        {label:'Non-PC',data:mths.map(r=>r.npc),backgroundColor:C.S+'CC',borderRadius:3,borderSkipped:false,stack:'s'},
+        {label:'Total',data:mths.map(r=>r.t),type:'line',borderColor:C.R,borderWidth:2,
+         pointRadius:4,pointBackgroundColor:C.R,tension:.3,fill:false,stack:undefined}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        title:ctx=>`${MEN[mths[ctx[0].dataIndex]?.m]||''} ${yr}`,
+        label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}`
+      }}},
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{font:{size:10},autoSkip:false}},
+        y:{stacked:true,grid:{color:'#EEF2F8'},ticks:{font:{size:9}},border:{dash:[3,3]}}
+      },
+      onClick:(_,els)=>{if(els.length) gotoMonth(yr, mths[els[0].index].m);}
+    }
+  });
+
+  const grid=document.getElementById('yr-mo-grid');
+  grid.innerHTML='';
+  mths.forEach(r=>{
+    const bw=Math.round(r.t/peak*100);
+    const isPeak=r.t===peak;
+    const d=document.createElement('div');
+    d.className='mo-cell'+(isPeak?' peak':'');
+    d.innerHTML=`<div class="mo-name">${MEN[r.m]} ${yr}</div>
+      <div class="mo-val">${r.t.toLocaleString()}</div>
+      <div class="mo-pc">PC: ${r.pc.toLocaleString()}</div>
+      <div class="mo-npc">Non: ${r.npc.toLocaleString()}</div>
+      <div class="mo-bar" style="width:${bw}%"></div>`;
+    d.onclick=()=>gotoMonth(yr,r.m);
+    grid.appendChild(d);
+  });
+}
+
+/* ═══════════════════ MONTH VIEW ═══════════════════ */
+let curMonth=1;
+
+function buildMonthSelectors(activeYr, activeMo){
+  // Year pills
+  const yc=document.getElementById('mo-yr-selector');
+  if(yc){
+    yc.innerHTML='';
+    [2023,2024,2025,2026].forEach(yr=>{
+      const b=document.createElement('button');
+      b.className='sel-pill'+(yr===activeYr?' active':'');
+      b.textContent=yr;
+      b.onclick=()=>{ curYear=yr; curMonth=activeMo; buildMonthSelectors(yr,activeMo); renderMonth(yr,activeMo); };
+      yc.appendChild(b);
+    });
+  }
+  // Month pills — only months that exist for this year
+  const mc=document.getElementById('mo-selector');
+  if(mc){
+    mc.innerHTML='';
+    const availMonths=MONTHLY.filter(r=>r.y===activeYr);
+    availMonths.forEach(r=>{
+      const b=document.createElement('button');
+      b.className='sel-pill'+(r.m===activeMo?' mo-active':'');
+      b.textContent=MEN[r.m];
+      b.onclick=()=>{ curMonth=r.m; buildMonthSelectors(activeYr,r.m); renderMonth(activeYr,r.m); };
+      mc.appendChild(b);
+    });
+  }
+}
+
+function gotoMonth(yr,mo){
+  curYear=yr; curMonth=mo;
+  const tabEl=document.querySelectorAll('.tab')[2];
+  gotoTab('month',tabEl);
+  buildMonthSelectors(yr,mo);
+  renderMonth(yr,mo);
+}
+
+function renderMonth(yr,mo){
+  const key=`${yr}-${mo}`;
+  const days=(DAILY_BY_YM[key]||[]).filter(r=>r.t>0);
+  const mInfo=MONTHLY.find(r=>r.y===yr&&r.m===mo)||{t:0,pc:0,npc:0};
+  const peak=days.length?Math.max(...days.map(r=>r.t)):0;
+  const avg=days.length?Math.round(mInfo.t/days.length):0;
+  const peakDay=days.find(r=>r.t===peak);
+
+  const prodDays=days.filter(r=>PROD_DATA[`${r.y}-${r.m}-${r.d}`]);
+  const hasProd=prodDays.length>0;
+
+  document.getElementById('mo-ttl').textContent=`รายวัน — ${MEN[mo]} ${yr} (${MTH[mo]} ${yr})`;
+  document.getElementById('tab-ctx').textContent=`${MEN[mo].toUpperCase()} ${yr}`;
+  document.getElementById('ftr-panel').textContent=`Month: ${MEN[mo]} ${yr}`;
+
+  const backBtn=document.getElementById('mo-back-yr');
+  backBtn.textContent=`← ปี ${yr}`;
+  backBtn.onclick=()=>{const t=document.querySelectorAll('.tab')[1];gotoTab('year',t);renderYear(yr)};
+
+  const prodBadge=document.getElementById('mo-prod-badge');
+  const prodText=document.getElementById('mo-prod-text');
+  if(hasProd){
+    prodBadge.style.display='flex';
+    const totalProd=prodDays.reduce((s,r)=>{const p=PROD_DATA[`${r.y}-${r.m}-${r.d}`];return s+(p?p.ptot:0)},0);
+    const totalSeal=prodDays.reduce((s,r)=>s+r.t,0);
+    const rate=(totalSeal/totalProd*100).toFixed(2);
+    prodText.textContent=`Production (${prodDays.length} วัน): ${totalProd.toLocaleString()} · Defect Rate: ${rate}%`;
+  }else{
+    prodBadge.style.display='none';
+  }
+
+  document.getElementById('mo-kstrip').innerHTML=`
+    <div class="kcard kc-red"><div class="kcard-top"><div class="kicon ki-red"><svg viewBox="0 0 16 16" fill="none" stroke="#E8192C" stroke-width="1.7"><path d="M8 2L8 10M5 7l3 3 3-3"/><path d="M2 13h12" stroke-linecap="round"/></svg></div><div class="kbody"><div class="klabel">Total ${MEN[mo]} ${yr}</div><div class="kval">${mInfo.t.toLocaleString()}</div><div class="ksub">cases ทั้งเดือน</div></div></div></div>
+    <div class="kcard kc-blue"><div class="kcard-top"><div class="kicon ki-blue"><svg viewBox="0 0 16 16" fill="none" stroke="#0057B8" stroke-width="1.7"><rect x="2" y="8" width="4" height="6" rx="1"/><rect x="6" y="5" width="4" height="9" rx="1"/><rect x="10" y="2" width="4" height="12" rx="1"/></svg></div><div class="kbody"><div class="klabel">Line PC</div><div class="kval">${mInfo.pc.toLocaleString()}</div><div class="ksub">${mInfo.t?((mInfo.pc/mInfo.t)*100).toFixed(1):'0'}%</div></div></div></div>
+    <div class="kcard kc-sky"><div class="kcard-top"><div class="kicon ki-sky"><svg viewBox="0 0 16 16" fill="none" stroke="#00A3E0" stroke-width="1.7"><rect x="2" y="8" width="4" height="6" rx="1"/><rect x="6" y="5" width="4" height="9" rx="1"/><rect x="10" y="2" width="4" height="12" rx="1"/></svg></div><div class="kbody"><div class="klabel">Line Non-PC</div><div class="kval">${mInfo.npc.toLocaleString()}</div><div class="ksub">${mInfo.t?((mInfo.npc/mInfo.t)*100).toFixed(1):'0'}%</div></div></div></div>
+    <div class="kcard kc-amber"><div class="kcard-top"><div class="kicon ki-amber"><svg viewBox="0 0 16 16" fill="none" stroke="#C8930A" stroke-width="1.7"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5l2 1.5" stroke-linecap="round"/></svg></div><div class="kbody"><div class="klabel">Peak Day</div><div class="kval">${peak.toLocaleString()}</div><div class="ksub">วันที่ ${peakDay?peakDay.d:'—'} ${MEN[mo]}</div></div></div></div>
+    <div class="kcard kc-green"><div class="kcard-top"><div class="kicon ki-green"><svg viewBox="0 0 16 16" fill="none" stroke="#3E8A3E" stroke-width="1.7"><path d="M3 8h10" stroke-linecap="round"/></svg></div><div class="kbody"><div class="klabel">Avg / วัน</div><div class="kval">${avg.toLocaleString()}</div><div class="ksub">${days.length} วัน (มีข้อมูล)</div></div></div></div>
+  `;
+
+  // Bar colors: highlight peak day in red
+  const barColors=days.map(r=>r.t===peak?C.R+'DD':C.B+'BB');
+  const npcColors=days.map(r=>r.t===peak?'#FF666688':C.S+'BB');
+
+  mk('cMoBar',{type:'bar',
+    data:{
+      labels:days.map(r=>`${r.d}`),
+      datasets:[
+        {label:'Line PC',data:days.map(r=>r.pc),backgroundColor:barColors,borderRadius:2,borderSkipped:false,stack:'s'},
+        {label:'Non-PC',data:days.map(r=>r.npc),backgroundColor:npcColors,borderRadius:2,borderSkipped:false,stack:'s'},
+        {label:'Total',data:days.map(r=>r.t),type:'line',borderColor:C.R,borderWidth:1.5,
+         pointRadius:days.map(r=>r.t===peak?6:2),
+         pointBackgroundColor:days.map(r=>r.t===peak?C.R:'#fff'),
+         pointBorderColor:C.R,pointBorderWidth:1.5,
+         tension:.35,fill:false,stack:undefined}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{
+          title:ctx=>`${ctx[0].label} ${MEN[mo]} ${yr}`,
+          afterBody:ctx=>{
+            const i=ctx[0].dataIndex;
+            const r=days[i];
+            const pk=PROD_DATA[`${r.y}-${r.m}-${r.d}`];
+            if(pk) return [`Production PC: ${pk.ppc.toLocaleString()}`,`Production NonPC: ${pk.pnpc.toLocaleString()}`,`Defect Rate: ${(r.t/pk.ptot*100).toFixed(2)}%`];
+            return [];
+          }
+        }}
+      },
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{font:{size:9},maxRotation:0,autoSkip:true,maxTicksLimit:31}},
+        y:{stacked:true,grid:{color:'#EEF2F8'},ticks:{font:{size:9}},border:{dash:[3,3]}}
+      }
+    }
+  });
+}
+
+/* ═══════════════════ HEATMAP ═══════════════════ */
+function buildHeatmap(){
+  const container=document.getElementById('hm-container');
+  container.innerHTML='';
+
+  const allT=DAILY_RAW.filter(r=>r.y>=2024&&r.y<=2025).map(r=>r.t);
+  const maxT=Math.max(...allT);
+
+  function heatColor(v){
+    if(v===0) return '#F0F4FA';
+    const p=v/maxT;
+    if(p<0.25) return '#BFCFE8';
+    if(p<0.5)  return '#6896D4';
+    if(p<0.75) return '#2255A8';
+    return '#E8192C';
+  }
+
+  // DOW header
+  const dowRow=document.createElement('div');
+  dowRow.className='hm-dow';
+  ['M','T','W','T','F','S','S'].forEach(d=>{
+    const s=document.createElement('span');s.textContent=d;dowRow.appendChild(s);
+  });
+  container.appendChild(dowRow);
+
+  [2024,2025].forEach(yr=>{
+    const yearLabel=document.createElement('div');
+    yearLabel.style.cssText='font-size:.62rem;font-weight:700;color:var(--tx2);margin:6px 0 2px 26px;letter-spacing:.06em;font-family:var(--mono)';
+    yearLabel.textContent=`— ${yr} —`;
+    container.appendChild(yearLabel);
+
+    for(let mo=1;mo<=12;mo++){
+      const row=document.createElement('div');
+      row.className='hm-row';
+      const lbl=document.createElement('div');
+      lbl.className='hm-label';
+      lbl.textContent=MEN[mo].slice(0,3);
+      row.appendChild(lbl);
+
+      const days=new Date(yr,mo,0).getDate();
+      const startDow=(new Date(yr,mo-1,1).getDay()+6)%7; // Mon=0
+
+      // Pad start
+      for(let i=0;i<startDow;i++){
+        const pad=document.createElement('div');
+        pad.style.cssText='width:18px;height:18px;flex-shrink:0';
+        row.appendChild(pad);
+      }
+
+      for(let d=1;d<=days;d++){
+        const cell=document.createElement('div');
+        cell.className='hm-cell';
+        const rec=DAILY_RAW.find(r=>r.y===yr&&r.m===mo&&r.d===d);
+        const v=rec?rec.t:0;
+        cell.style.background=heatColor(v);
+        cell.title=`${d} ${MEN[mo]} ${yr}: ${v>0?v+' cases':'ไม่มีข้อมูล'}`;
+        row.appendChild(cell);
+      }
+      container.appendChild(row);
+    }
+  });
+}
+
+/* ═══════════════════ TOP TABLE ═══════════════════ */
+function buildTopTable(){
+  const sorted=[...DAILY_RAW].sort((a,b)=>b.t-a.t).slice(0,15);
+  const maxT=sorted[0].t;
+  const tbody=document.getElementById('top-tbody');
+  tbody.innerHTML='';
+  sorted.forEach((r,i)=>{
+    const bw=Math.round(r.t/maxT*82);
+    const rCls=i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    const dateTH=`${r.d} ${MTH[r.m]} ${r.y}`;
+    tbody.innerHTML+=`<tr>
+      <td><span class="rank ${rCls}">${i+1}</span></td>
+      <td>${dateTH}</td>
+      <td class="num-mono" style="color:#0057B8">${r.pc}</td>
+      <td class="num-mono" style="color:#00A3E0">${r.npc}</td>
+      <td class="num-mono" style="color:#E8192C;font-weight:700">${r.t}</td>
+      <td>
+        <div class="mbar-wrap">
+          <div class="mbar" style="width:${bw}px;background:${i<3?C.R:C.B}"></div>
+          <span style="font-size:.58rem;color:var(--tx3)">${(r.t/maxT*100).toFixed(0)}%</span>
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  buildHeatmap();
+}
+
+/* ═══════════════════ NAVIGATION ═══════════════════ */
+const PANELS={overview:'p-overview',year:'p-year',month:'p-month',ranking:'p-ranking'};
+const FTRLBLS={overview:'Overview',year:'Year View',month:'Month View',ranking:'Top Issues & Heatmap'};
+
+function gotoTab(id,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(PANELS[id]).classList.add('active');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  else {
+    const idx={overview:0,year:1,month:2,ranking:3}[id];
+    document.querySelectorAll('.tab')[idx]?.classList.add('active');
+  }
+  document.getElementById('ftr-panel').textContent=FTRLBLS[id];
+  if(id==='overview'){document.getElementById('tab-ctx').textContent='';initOverview();}
+  if(id==='year'){renderYear(curYear);}
+  if(id==='month'){buildMonthSelectors(curYear,curMonth);renderMonth(curYear,curMonth);}
+  if(id==='ranking'){document.getElementById('tab-ctx').textContent='';buildTopTable();}
+}
+
+/* ═══════════════════ DATETIME ═══════════════════ */
+function tick(){
+  const n=new Date();
+  document.getElementById('dt-time').textContent=n.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('dt-date').textContent=n.toLocaleDateString('th-TH',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+}
+tick();setInterval(tick,1000);
+
+/* ═══════════════════ CAPTURE ═══════════════════ */
+function captureScreen(){
+  const activeId=document.querySelector('.panel.active').id.replace('p-','');
+  html2canvas(document.body,{
+    scale:2,useCORS:true,backgroundColor:'#F7F9FC',
+    windowWidth:document.documentElement.scrollWidth,
+    windowHeight:document.documentElement.scrollHeight
+  }).then(c=>{
+    const a=document.createElement('a');
+    a.download=`NIM_PepsiCo_Sealing_${activeId}_${new Date().toISOString().slice(0,10)}.png`;
+    a.href=c.toDataURL('image/png');a.click();
+  });
+}
+
+/* INIT */
+initOverview();
+</script>
+</body>
+</html>
